@@ -1,6 +1,7 @@
 // controllers/productController.js
 const Product = require("../models/Product");
-
+const User = require("../models/users");
+const jwt = require("jsonwebtoken");
 module.exports = {
   async createProduct(req, res) {
     try {
@@ -68,5 +69,31 @@ module.exports = {
       console.error("Error deleting product:", error);
       res.status(500).json({ error: "Error deleting product" });
     }
+  },
+
+  /************************************************************************SIGNUP/LOGIN************************************************************************/
+
+  async signup(req, res) {
+    const { username, password, email } = req.body;
+
+    // Regular expression for email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    if (!emailRegex.test(email)) {
+      return res.status(400).send("Invalid email address");
+    }
+
+    const newUser = new User({ username, password, email });
+    await newUser.save();
+    res.status(201).send("User registered");
+  },
+  async login(req, res) {
+    const { username, password } = req.body;
+    const user = await User.findOne({ username, password });
+    if (!user) {
+      return res.status(401).send("Invalid username or password");
+    }
+    const token = jwt.sign({ userId: user._id }, process.env.SECRET_KEY); // Change 'secret_key' to your secret key
+    res.json({ token });
   },
 };
